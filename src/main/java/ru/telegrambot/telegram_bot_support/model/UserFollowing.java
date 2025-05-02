@@ -1,8 +1,6 @@
 package ru.telegrambot.telegram_bot_support.model;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 import java.time.LocalDateTime;
@@ -12,9 +10,8 @@ import java.util.Objects;
 public class UserFollowing {
 
     @Id
-    private Long userId;
-
     private Long chatId;
+
     private boolean payment;
     private LocalDateTime dateStarted;
     private LocalDateTime dateEnded;
@@ -23,9 +20,7 @@ public class UserFollowing {
     public UserFollowing() {
     }
 
-    public UserFollowing(Long userId, Long chatId, LocalDateTime dateStarted, LocalDateTime dateEnded) {
-        //this.id = 0L;
-        this.userId = userId;
+    public UserFollowing(Long chatId, LocalDateTime dateStarted, LocalDateTime dateEnded) {
         this.chatId = chatId;
         this.payment = false;
         this.dateStarted = dateStarted;
@@ -39,14 +34,6 @@ public class UserFollowing {
 
     public void setSent(boolean sent) {
         this.sent = sent;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
     }
 
     public Long getChatId() {
@@ -86,18 +73,17 @@ public class UserFollowing {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         UserFollowing that = (UserFollowing) o;
-        return Objects.equals(userId, that.userId);
+        return Objects.equals(chatId, that.chatId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(userId);
+        return Objects.hash(chatId);
     }
 
     @Override
     public String toString() {
         return "User{" +
-                ", userId=" + userId +
                 ", chatId=" + chatId +
                 ", payment=" + payment +
                 ", dateStarted=" + dateStarted +

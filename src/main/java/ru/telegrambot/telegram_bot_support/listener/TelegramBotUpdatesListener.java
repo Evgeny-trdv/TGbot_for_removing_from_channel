@@ -2,44 +2,38 @@ package ru.telegrambot.telegram_bot_support.listener;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
-import com.pengrad.telegrambot.model.Update;
-import com.pengrad.telegrambot.model.request.KeyboardButton;
-import com.pengrad.telegrambot.model.request.ReplyKeyboardMarkup;
-import com.pengrad.telegrambot.request.BanChatMember;
-import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.request.UnbanChatMember;
+import com.pengrad.telegrambot.model.*;
+import com.pengrad.telegrambot.request.*;
 import jakarta.annotation.PostConstruct;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.telegrambot.telegram_bot_support.model.UserFollowing;
 import ru.telegrambot.telegram_bot_support.repository.UserRepository;
 
+import java.io.File;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.List;
+
+import static ru.telegrambot.telegram_bot_support.constant.TelegramConstant.*;
+
 
 @Service
 public class TelegramBotUpdatesListener implements UpdatesListener {
 
-    private final String TEXT_NOTIFICATION = "Ваша подписка подходит к концу через 2 дня";
-    private final String TEXT_ABOUT_ENDED_SUBSCRIPTION = "Ваша подписка закончилась";
-
-    private static final List<String> TARGET_CHANNELS = Arrays.asList(
-            "-1002516647653",
-            "-1002606419459"// Пример числового ID канала
-    );
-
     private final Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
 
-    @Autowired
-    private TelegramBot telegramBot;
+    private final TelegramBot telegramBot;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+
+    public TelegramBotUpdatesListener(TelegramBot telegramBot, UserRepository userRepository) {
+        this.telegramBot = telegramBot;
+        this.userRepository = userRepository;
+    }
 
     @PostConstruct
     public void init() {
@@ -48,47 +42,43 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
     @Override
     public int process(List<Update> updates) {
-
         updates.forEach(update -> {
 
-            if (update.message() == null || update.message().text() == null) {
+            String messageTextUser = update.message().text();
+            if (update.message() == null || messageTextUser == null) {
+                /**
+                 * игнорирование ошибки пустой строчки
+                 */
                 return;
             }
 
             logger.info("Processing update {}", update);
 
-            String messageUser = update.message().text();
             long userId = update.message().from().id();
             long chatId = update.message().chat().id();
+            String firstNameUser = update.message().from().firstName();
 
-            if (messageUser.equals("/start")) {
-
-                SendMessage sendMessage = new SendMessage(
-                        chatId,
-                        "Добро пожаловать, для получения доступа к чатам необходимо провести оплату");
-
-                KeyboardButton paymentButton = new KeyboardButton("/payment");
-
-                ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup(paymentButton);
-                keyboardMarkup.resizeKeyboard(true);
-
-                keyboardMarkup.oneTimeKeyboard(true);
-
-                sendMessage.replyMarkup(keyboardMarkup);
+            if (messageTextUser.equals("/start")) {
+                SendMessage sendMessage = getSendMessage(chatId, firstNameUser);
                 telegramBot.execute(sendMessage);
-
             }
 
-            if (messageUser.equals("/leave")) {
+            if (update.message().photo() != null) {
+                PhotoSize photoSize = update.message().photo()[0];
+                SendPhoto sendPhoto = new SendPhoto(chatId, new File(photoSize.fileId()));
+                telegramBot.execute(sendPhoto);
+            }
+
+            if (messageTextUser.equals("/leave")) {
                 removeUser(userId);
             }
 
-            if (messageUser.equals("/payment")) {
+            /*if (messageTextUser.equals("/payment")) {
                 LocalDateTime now = LocalDateTime.now(); //день оплаты
                 LocalDateTime next = LocalDateTime.now().plusDays(28); //день уведомления об окончании подписки
                 UserFollowing user = new UserFollowing(
-                     userId,
-                     chatId,
+                        userId,
+                        chatId,
                         now,
                         next
                 );
@@ -98,11 +88,34 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                         chatId,
                         "Successful"
                 ));
-            }
+            }*/
 
         });
 
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
+    }
+
+
+    @NotNull
+    private static SendMessage getSendMessage(long chatId, String firstNameUser) {
+        SendMessage sendMessage = new SendMessage(
+                chatId,
+                "Добро пожаловать" + firstNameUser +", для получения доступа к чатам необходимо провести оплату. \n"
+                        + "\n Доступ к чатам выполняется по подписке. " +
+                        "\n Срок подписки - 1 месяц." +
+                        "\n Цена подписки - 50$" +
+                        "\n переводите на USDT:номер кошелька \n" +
+                        "\n После завершения оплаты отправьте боту скриншот транзакции");
+
+        /*KeyboardButton paymentButton = new KeyboardButton("/payment");
+
+        ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup(paymentButton);
+        keyboardMarkup.resizeKeyboard(true);
+
+        keyboardMarkup.oneTimeKeyboard(true);
+
+        sendMessage.replyMarkup(keyboardMarkup);*/
+        return sendMessage;
     }
 
     @Scheduled(cron = "0 0/1 * * * *")
@@ -110,14 +123,14 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
 
         /**
-     * создаётся список уведомлений об окончании подписки с теми данными из БД, которые ещё актуальны
-     */
+         * создаётся список уведомлений об окончании подписки с теми данными из БД, которые ещё актуальны
+         */
         List<UserFollowing> notifications = userRepository.findByDateEndedBeforeAndSentFalse(now);
 
         /**
-     * C помощью цикла проходим по всем notifications
-     * вызываем метод для отправки сообщения
-     */
+         * C помощью цикла проходим по всем notifications
+         * вызываем метод для отправки сообщения
+         */
         for (UserFollowing notification : notifications) {
             sendMessageNotifications(notification);
             notification.setSent(true);
@@ -135,19 +148,19 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         //по циклу для очистки данных в БД тех пользователей, у которых закончилась подписка
         for (UserFollowing notification : notifications) {
             sendMessageNotificationsAboutEndedSubscription(notification);
-            userRepository.findByUserId(notification.getUserId()).setDateStarted(null);
-            userRepository.findByUserId(notification.getUserId()).setDateEnded(null);
-            userRepository.findByUserId(notification.getUserId()).setPayment(false);
+            userRepository.findByChatId(notification.getChatId()).setDateStarted(null);
+            userRepository.findByChatId(notification.getChatId()).setDateEnded(null);
+            userRepository.findByChatId(notification.getChatId()).setPayment(false);
 
             //удаление пользователя из списка каналов
             for (String chatId : TARGET_CHANNELS) {
                 try {
                     // Сначала баним (это удалит из канала)
-                    BanChatMember ban = new BanChatMember(chatId, notification.getUserId());
+                    BanChatMember ban = new BanChatMember(chatId, notification.getChatId());
                     telegramBot.execute(ban);
 
                     // Затем разбаниваем (если нужно, чтобы мог присоединиться снова)
-                    UnbanChatMember unban = new UnbanChatMember(chatId, notification.getUserId());
+                    UnbanChatMember unban = new UnbanChatMember(chatId, notification.getChatId());
                     telegramBot.execute(unban);
 
                 } catch (IllegalAccessError e) {

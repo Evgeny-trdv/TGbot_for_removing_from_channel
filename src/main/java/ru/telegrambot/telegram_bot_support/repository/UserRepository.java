@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface UserRepository extends JpaRepository<UserFollowing, Long> {
 
-    public UserFollowing findByUserId(Long userId);
+    public UserFollowing findByChatId(Long chatId);
 
     public List<UserFollowing> findByDateEndedBeforeAndSentFalse(LocalDateTime date);
 }

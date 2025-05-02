@@ -8,6 +8,8 @@ public class TelegramConstant {
     public static final String TEXT_NOTIFICATION = "Ваша подписка подходит к концу через 2 дня";
     public static final String TEXT_ABOUT_ENDED_SUBSCRIPTION = "Ваша подписка закончилась";
 
+    public static final long YOUR_CHAT_ID = 847030320L;
+
     public static final List<String> TARGET_CHANNELS = Arrays.asList(
             "-1002609655325",
             "-1002516647653",

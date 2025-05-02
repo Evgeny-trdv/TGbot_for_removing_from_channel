@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import ru.telegrambot.telegram_bot_support.listener.service.ForwardPhotoToCheck;
+import ru.telegrambot.telegram_bot_support.listener.service.SendStartMessageService;
 import ru.telegrambot.telegram_bot_support.model.UserFollowing;
 import ru.telegrambot.telegram_bot_support.repository.UserRepository;
 
@@ -27,12 +29,15 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private final Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
 
     private final TelegramBot telegramBot;
-
     private final UserRepository userRepository;
+    private final SendStartMessageService sendStartMessageService;
+    private final ForwardPhotoToCheck forwardPhotoToCheck;
 
-    public TelegramBotUpdatesListener(TelegramBot telegramBot, UserRepository userRepository) {
+    public TelegramBotUpdatesListener(TelegramBot telegramBot, UserRepository userRepository, SendStartMessageService sendStartMessageService, ForwardPhotoToCheck forwardPhotoToCheck) {
         this.telegramBot = telegramBot;
         this.userRepository = userRepository;
+        this.sendStartMessageService = sendStartMessageService;
+        this.forwardPhotoToCheck = forwardPhotoToCheck;
     }
 
     @PostConstruct
@@ -42,35 +47,48 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
     @Override
     public int process(List<Update> updates) {
-        updates.forEach(update -> {
 
-            String messageTextUser = update.message().text();
-            if (update.message() == null || messageTextUser == null) {
+        updates.forEach(update -> {
+            logger.info("Processing update {}", update);
+
+
+            if (update.message() == null) {
                 /**
                  * игнорирование ошибки пустой строчки
                  */
                 return;
             }
-
-            logger.info("Processing update {}", update);
-
-            long userId = update.message().from().id();
-            long chatId = update.message().chat().id();
-            String firstNameUser = update.message().from().firstName();
-
-            if (messageTextUser.equals("/start")) {
-                SendMessage sendMessage = getSendMessage(chatId, firstNameUser);
-                telegramBot.execute(sendMessage);
-            }
-
             if (update.message().photo() != null) {
-                PhotoSize photoSize = update.message().photo()[0];
-                SendPhoto sendPhoto = new SendPhoto(chatId, new File(photoSize.fileId()));
-                telegramBot.execute(sendPhoto);
+
+                ForwardMessage forwardMessage = forwardPhotoToCheck.forwardMessageToDaniel(
+                            update.message().chat().id(),
+                            update.message().messageId());
+                telegramBot.execute(forwardMessage);
+                telegramBot.execute(new SendMessage(
+                            update.message().chat().id(),
+                            "Фото получено на проверку!"));
+                telegramBot.execute(new SendMessage(
+                            YOUR_CHAT_ID,
+                            "Имя клиента: "
+                                    + update.message().chat().firstName()
+                                    + "\nUsername: "
+                                    + update.message().from().username()
+                                    + "\nid: "
+                                    + update.message().chat().id()));
             }
 
-            if (messageTextUser.equals("/leave")) {
-                removeUser(userId);
+            if (update.message().text() != null) {
+
+                if (update.message().text().equals("/start")) {
+                    SendMessage sendMessage = sendStartMessageService.getSendMessage(
+                            update.message().chat().id(),
+                            update.message().from().firstName());
+                    telegramBot.execute(sendMessage);
+                }
+
+                if (update.message().text().equals("/leave")) {
+                    removeUser(update.message().chat().id());
+                }
             }
 
             /*if (messageTextUser.equals("/payment")) {
@@ -93,29 +111,6 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         });
 
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
-    }
-
-
-    @NotNull
-    private static SendMessage getSendMessage(long chatId, String firstNameUser) {
-        SendMessage sendMessage = new SendMessage(
-                chatId,
-                "Добро пожаловать" + firstNameUser +", для получения доступа к чатам необходимо провести оплату. \n"
-                        + "\n Доступ к чатам выполняется по подписке. " +
-                        "\n Срок подписки - 1 месяц." +
-                        "\n Цена подписки - 50$" +
-                        "\n переводите на USDT:номер кошелька \n" +
-                        "\n После завершения оплаты отправьте боту скриншот транзакции");
-
-        /*KeyboardButton paymentButton = new KeyboardButton("/payment");
-
-        ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup(paymentButton);
-        keyboardMarkup.resizeKeyboard(true);
-
-        keyboardMarkup.oneTimeKeyboard(true);
-
-        sendMessage.replyMarkup(keyboardMarkup);*/
-        return sendMessage;
     }
 
     @Scheduled(cron = "0 0/1 * * * *")

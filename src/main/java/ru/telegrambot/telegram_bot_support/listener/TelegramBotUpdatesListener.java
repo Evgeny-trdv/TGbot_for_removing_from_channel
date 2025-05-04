@@ -5,20 +5,21 @@ import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.*;
 import com.pengrad.telegrambot.request.*;
 import jakarta.annotation.PostConstruct;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import ru.telegrambot.telegram_bot_support.listener.service.CheckingService;
 import ru.telegrambot.telegram_bot_support.listener.service.ForwardPhotoToCheck;
-import ru.telegrambot.telegram_bot_support.listener.service.SendStartMessageService;
+import ru.telegrambot.telegram_bot_support.listener.service.SendMessageService;
+import ru.telegrambot.telegram_bot_support.listener.service.UserStateRegistry;
 import ru.telegrambot.telegram_bot_support.model.UserFollowing;
 import ru.telegrambot.telegram_bot_support.repository.UserRepository;
 
-import java.io.File;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+
 
 import static ru.telegrambot.telegram_bot_support.constant.TelegramConstant.*;
 
@@ -26,18 +27,24 @@ import static ru.telegrambot.telegram_bot_support.constant.TelegramConstant.*;
 @Service
 public class TelegramBotUpdatesListener implements UpdatesListener {
 
+    public static long chatIdNewUser = 0L;
+
     private final Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
 
     private final TelegramBot telegramBot;
     private final UserRepository userRepository;
-    private final SendStartMessageService sendStartMessageService;
+    private final SendMessageService sendMessageService;
     private final ForwardPhotoToCheck forwardPhotoToCheck;
+    private final UserStateRegistry userStateRegistry;
+    private final CheckingService checkingService;
 
-    public TelegramBotUpdatesListener(TelegramBot telegramBot, UserRepository userRepository, SendStartMessageService sendStartMessageService, ForwardPhotoToCheck forwardPhotoToCheck) {
+    public TelegramBotUpdatesListener(TelegramBot telegramBot, UserRepository userRepository, SendMessageService sendMessageService, ForwardPhotoToCheck forwardPhotoToCheck, UserStateRegistry userStateRegistry, CheckingService checkingService) {
         this.telegramBot = telegramBot;
         this.userRepository = userRepository;
-        this.sendStartMessageService = sendStartMessageService;
+        this.sendMessageService = sendMessageService;
         this.forwardPhotoToCheck = forwardPhotoToCheck;
+        this.userStateRegistry = userStateRegistry;
+        this.checkingService = checkingService;
     }
 
     @PostConstruct
@@ -59,14 +66,17 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 return;
             }
             if (update.message().photo() != null) {
-
+                long chatId = update.message().chat().id();
                 ForwardMessage forwardMessage = forwardPhotoToCheck.forwardMessageToDaniel(
                             update.message().chat().id(),
                             update.message().messageId());
+
                 telegramBot.execute(forwardMessage);
+
                 telegramBot.execute(new SendMessage(
                             update.message().chat().id(),
-                            "Фото получено на проверку!"));
+                            "Фото получено на проверку! Пожалуйста, ожидайте"));
+
                 telegramBot.execute(new SendMessage(
                             YOUR_CHAT_ID,
                             "Имя клиента: "
@@ -74,13 +84,41 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                     + "\nUsername: "
                                     + update.message().from().username()
                                     + "\nid: "
-                                    + update.message().chat().id()));
+                                    + update.message().chat().id()
+                                    + "\nвведите \"ДА\", если оплата прошла и \"НЕТ\", если оплата не прошла"));
+
+                userStateRegistry.setUserState(YOUR_CHAT_ID, "AWAITING_NAME");
+                chatIdNewUser = chatId;
             }
 
             if (update.message().text() != null) {
 
+                // Проверяем, есть ли у пользователя состояние
+                String userState = userStateRegistry.getUserState(YOUR_CHAT_ID);
+
+                if (userState != null) {
+                    // Если бот ожидает ввод от пользователя
+                    if (update.message().text().equalsIgnoreCase("да")) {
+                        /**
+                         * метод для работы логики Данила в момент получения фотографии
+                         * необходим ответ от Данила для дальнейшей записи в БД юзера
+                         */
+                        checkingService.handleUserInput(YOUR_CHAT_ID, userState, chatIdNewUser);
+
+                        //handleUserInput(YOUR_CHAT_ID, userState, chatIdNewUser);
+
+                        telegramBot.execute(sendMessageService.getSendTextMessageAboutSuccessfulChecking(chatIdNewUser));
+
+/*                        telegramBot.execute(new SendMessage(
+                                chatIdNewUser,
+                                "Фото прошло проверку! В ближайшее время вам придёт папка с чатами"
+                                + "\nCрок подписки - 30 дней не зависимо от месяца"));*/
+                        return;
+                    }
+                }
+
                 if (update.message().text().equals("/start")) {
-                    SendMessage sendMessage = sendStartMessageService.getSendMessage(
+                    SendMessage sendMessage = sendMessageService.getSendStartMessage(
                             update.message().chat().id(),
                             update.message().from().firstName());
                     telegramBot.execute(sendMessage);
@@ -88,6 +126,15 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
                 if (update.message().text().equals("/leave")) {
                     removeUser(update.message().chat().id());
+                }
+
+            }
+            if (update.message().forwardFrom() != null) {
+
+                if (update.message().chat().id().equals(YOUR_CHAT_ID)
+                        && update.message().forwardFrom().isBot()
+                        && update.message().text().equalsIgnoreCase("ДА")) {
+                    //telegramBot.execute(new SendMessage(YOUR_CHAT_ID, "привет"));
                 }
             }
 
@@ -208,6 +255,43 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             telegramBot.execute(sendMessage);
         } catch (Exception e) {
             logger.error("Ошибка отправки сообщения в чат{}", notification.getChatId(), e);
+        }
+    }
+
+    private void handleUserInput(long userId, String userState, long chatIdNewUser) {
+        /**
+         * userId это Данил
+         * здесь логика подтверждения оплаты подписки
+         * затем происходит запись юзера в БД и начало отсчёта периода подписки
+         */
+        switch (userState) {
+            case "AWAITING_NAME":
+                sendTextMessage(userId, "Пользователь был успешно внесен в БД!");
+                saveUserInBD(chatIdNewUser);
+                userStateRegistry.clearUserState(userId);
+                break;
+            // Можно добавить другие состояния
+        }
+    }
+
+    private void saveUserInBD(long chatIdNewUser) {
+        LocalDateTime now = LocalDateTime.now(); //день оплаты
+        LocalDateTime next = LocalDateTime.now().plusDays(28); //день уведомления об окончании подписки
+        UserFollowing user = new UserFollowing(
+                chatIdNewUser,
+                now,
+                next
+        );
+        user.setPayment(true);
+        userRepository.save(user);
+    }
+
+    private void sendTextMessage(long chatId, String text) {
+        SendMessage message = new SendMessage(chatId, text);
+        try {
+            telegramBot.execute(message);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

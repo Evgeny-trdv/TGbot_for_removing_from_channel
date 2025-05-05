@@ -10,5 +10,7 @@ public interface UserRepository extends JpaRepository<UserFollowing, Long> {
 
     public UserFollowing findByChatId(Long chatId);
 
+    public List<UserFollowing> findByDateNotificationBeforeAndSentFalse(LocalDateTime date);
+
     public List<UserFollowing> findByDateEndedBeforeAndSentFalse(LocalDateTime date);
 }

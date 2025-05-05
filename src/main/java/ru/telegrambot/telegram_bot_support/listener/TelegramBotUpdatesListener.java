@@ -1,6 +1,7 @@
 package ru.telegrambot.telegram_bot_support.listener;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.TelegramException;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.*;
 import com.pengrad.telegrambot.request.*;
@@ -50,6 +51,11 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     @PostConstruct
     public void init() {
         telegramBot.setUpdatesListener(this);
+        try {
+            setCommands();
+        } catch (TelegramException e) {
+            logger.error(e.getMessage());
+        }
     }
 
     @Override
@@ -66,29 +72,28 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 return;
             }
             if (update.message().photo() != null) {
-                long chatId = update.message().chat().id();
+
                 ForwardMessage forwardMessage = forwardPhotoToCheck.forwardMessageToDaniel(
                             update.message().chat().id(),
                             update.message().messageId());
 
                 telegramBot.execute(forwardMessage);
 
-                telegramBot.execute(new SendMessage(
-                            update.message().chat().id(),
-                            "Фото получено на проверку! Пожалуйста, ожидайте"));
+                telegramBot.execute(
+                        sendMessageService.
+                                getSendTextMessageToUserAboutGettingPhoto(
+                                        update.message().chat().id()));
 
-                telegramBot.execute(new SendMessage(
-                            YOUR_CHAT_ID,
-                            "Имя клиента: "
-                                    + update.message().chat().firstName()
-                                    + "\nUsername: "
-                                    + update.message().from().username()
-                                    + "\nid: "
-                                    + update.message().chat().id()
-                                    + "\nвведите \"ДА\", если оплата прошла и \"НЕТ\", если оплата не прошла"));
+                telegramBot.execute(
+                        sendMessageService
+                                .getSendTextMessageToAdminForCheckingPayment(
+                                        update.message().chat().id(),
+                                        update.message().chat().firstName(),
+                                        update.message().from().username()
+                                ));
 
                 userStateRegistry.setUserState(YOUR_CHAT_ID, "AWAITING_NAME");
-                chatIdNewUser = chatId;
+                chatIdNewUser = update.message().chat().id();
             }
 
             if (update.message().text() != null) {
@@ -105,23 +110,17 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                          */
                         checkingService.handleUserInput(YOUR_CHAT_ID, userState, chatIdNewUser);
 
-                        //handleUserInput(YOUR_CHAT_ID, userState, chatIdNewUser);
+                        telegramBot.execute(sendMessageService.getSendTextMessageToUserAboutSuccessfulChecking(chatIdNewUser));
 
-                        telegramBot.execute(sendMessageService.getSendTextMessageAboutSuccessfulChecking(chatIdNewUser));
-
-/*                        telegramBot.execute(new SendMessage(
-                                chatIdNewUser,
-                                "Фото прошло проверку! В ближайшее время вам придёт папка с чатами"
-                                + "\nCрок подписки - 30 дней не зависимо от месяца"));*/
                         return;
                     }
                 }
 
                 if (update.message().text().equals("/start")) {
-                    SendMessage sendMessage = sendMessageService.getSendStartMessage(
+                    telegramBot.execute(sendMessageService.getSendStartMessage(
                             update.message().chat().id(),
-                            update.message().from().firstName());
-                    telegramBot.execute(sendMessage);
+                            update.message().from().firstName()
+                    ));
                 }
 
                 if (update.message().text().equals("/leave")) {
@@ -134,51 +133,40 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 if (update.message().chat().id().equals(YOUR_CHAT_ID)
                         && update.message().forwardFrom().isBot()
                         && update.message().text().equalsIgnoreCase("ДА")) {
-                    //telegramBot.execute(new SendMessage(YOUR_CHAT_ID, "привет"));
                 }
             }
-
-            /*if (messageTextUser.equals("/payment")) {
-                LocalDateTime now = LocalDateTime.now(); //день оплаты
-                LocalDateTime next = LocalDateTime.now().plusDays(28); //день уведомления об окончании подписки
-                UserFollowing user = new UserFollowing(
-                        userId,
-                        chatId,
-                        now,
-                        next
-                );
-                user.setPayment(true);
-                userRepository.save(user);
-                telegramBot.execute(new SendMessage(
-                        chatId,
-                        "Successful"
-                ));
-            }*/
 
         });
 
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
     }
 
-    @Scheduled(cron = "0 0/1 * * * *")
+    private void setCommands() throws TelegramException {
+        BotCommand commandFirst = new BotCommand("/start", "Запуск бота");
+        BotCommand commandSecond = new BotCommand("/help", "nothing");
+
+        telegramBot.execute(new SetMyCommands(commandFirst, commandSecond));
+    }
+
+/*    @Scheduled(cron = "0 0/1 * * * *")
     public void sendUsersNotifications() {
         LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
 
-        /**
+        *//**
          * создаётся список уведомлений об окончании подписки с теми данными из БД, которые ещё актуальны
-         */
+         *//*
         List<UserFollowing> notifications = userRepository.findByDateEndedBeforeAndSentFalse(now);
 
-        /**
+        *//**
          * C помощью цикла проходим по всем notifications
          * вызываем метод для отправки сообщения
-         */
+         *//*
         for (UserFollowing notification : notifications) {
             sendMessageNotifications(notification);
             notification.setSent(true);
             userRepository.save(notification);
         }
-    }
+    }*/
 
     @Scheduled(cron = "0 0/1 * * * *")
     public void sendNotificationAboutEndedSubscription() {
@@ -258,40 +246,4 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         }
     }
 
-    private void handleUserInput(long userId, String userState, long chatIdNewUser) {
-        /**
-         * userId это Данил
-         * здесь логика подтверждения оплаты подписки
-         * затем происходит запись юзера в БД и начало отсчёта периода подписки
-         */
-        switch (userState) {
-            case "AWAITING_NAME":
-                sendTextMessage(userId, "Пользователь был успешно внесен в БД!");
-                saveUserInBD(chatIdNewUser);
-                userStateRegistry.clearUserState(userId);
-                break;
-            // Можно добавить другие состояния
-        }
-    }
-
-    private void saveUserInBD(long chatIdNewUser) {
-        LocalDateTime now = LocalDateTime.now(); //день оплаты
-        LocalDateTime next = LocalDateTime.now().plusDays(28); //день уведомления об окончании подписки
-        UserFollowing user = new UserFollowing(
-                chatIdNewUser,
-                now,
-                next
-        );
-        user.setPayment(true);
-        userRepository.save(user);
-    }
-
-    private void sendTextMessage(long chatId, String text) {
-        SendMessage message = new SendMessage(chatId, text);
-        try {
-            telegramBot.execute(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }

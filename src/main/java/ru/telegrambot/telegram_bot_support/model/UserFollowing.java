@@ -14,18 +14,28 @@ public class UserFollowing {
 
     private boolean payment;
     private LocalDateTime dateStarted;
+    private LocalDateTime dateNotification;
     private LocalDateTime dateEnded;
     private boolean sent;
 
     public UserFollowing() {
     }
 
-    public UserFollowing(Long chatId, LocalDateTime dateStarted, LocalDateTime dateEnded) {
+    public UserFollowing(Long chatId, LocalDateTime dateStarted, LocalDateTime dateNotification, LocalDateTime dateEnded) {
         this.chatId = chatId;
         this.payment = false;
         this.dateStarted = dateStarted;
+        this.dateNotification = dateNotification;
         this.dateEnded = dateEnded;
         this.sent = false;
+    }
+
+    public LocalDateTime getDateNotification() {
+        return dateNotification;
+    }
+
+    public void setDateNotification(LocalDateTime dateNotification) {
+        this.dateNotification = dateNotification;
     }
 
     public boolean isSent() {

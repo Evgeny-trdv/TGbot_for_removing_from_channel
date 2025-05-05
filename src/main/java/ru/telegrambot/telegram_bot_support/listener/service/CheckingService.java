@@ -25,7 +25,7 @@ public class CheckingService {
     public void handleUserInput(long chatId, String userState, long chatIdNewUser) {
         switch (userState) {
             case "AWAITING_NAME":
-                telegramBot.execute(sendMessageService.getSendTextMessageAboutSaveUserToBD(chatId));
+                telegramBot.execute(sendMessageService.getSendTextMessageToAdminAboutSaveUserToBD(chatId));
                 saveUserInBD(chatIdNewUser);
                 userStateRegistry.clearUserState(chatId);
                 break;
@@ -35,11 +35,13 @@ public class CheckingService {
 
     private void saveUserInBD(long chatIdNewUser) {
         LocalDateTime now = LocalDateTime.now(); //день оплаты
-        LocalDateTime next = LocalDateTime.now().plusDays(28); //день уведомления об окончании подписки
+        LocalDateTime notification = LocalDateTime.now().plusDays(28); //день уведомления об окончании подписки
+        LocalDateTime end = LocalDateTime.now().plusDays(30); //день уведомления об окончании подписки
         UserFollowing user = new UserFollowing(
                 chatIdNewUser,
                 now,
-                next
+                notification,
+                end
         );
         user.setPayment(true);
         userRepository.save(user);

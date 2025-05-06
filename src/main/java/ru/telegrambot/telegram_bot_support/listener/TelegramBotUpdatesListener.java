@@ -123,10 +123,6 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                     ));
                 }
 
-                if (update.message().text().equals("/leave")) {
-                    removeUser(update.message().chat().id());
-                }
-
             }
             if (update.message().forwardFrom() != null) {
 
@@ -163,12 +159,12 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
          *//*
         for (UserFollowing notification : notifications) {
             sendMessageNotifications(notification);
-            notification.setSent(true);
+            notification.setSent_ended(true);
             userRepository.save(notification);
         }
     }*/
 
-    @Scheduled(cron = "0 0/1 * * * *")
+/*    @Scheduled(cron = "0 0/1 * * * *")
     public void sendNotificationAboutEndedSubscription() {
         LocalDateTime now = LocalDateTime.now();
 
@@ -201,9 +197,9 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             }
         }
 
-    }
+    }*/
 
-    public void removeUser(Long userId) {
+/*    public void removeUser(Long userId) {
         for (String chatId : TARGET_CHANNELS) {
             try {
                 // Сначала баним (это удалит из канала)
@@ -220,9 +216,9 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 System.err.println("Error removing user from channel " + chatId + ": " + e.getMessage());
             }
         }
-    }
+    }*/
 
-    private void sendMessageNotifications(UserFollowing notification) {
+/*    private void sendMessageNotifications(UserFollowing notification) {
         SendMessage sendMessage = new SendMessage(
                 notification.getChatId().toString(),
                 TEXT_NOTIFICATION);
@@ -232,9 +228,9 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         } catch (Exception e) {
             logger.error("Ошибка отправки сообщения в чат{}", notification.getChatId(), e);
         }
-    }
+    }*/
 
-    private void sendMessageNotificationsAboutEndedSubscription(UserFollowing notification) {
+/*    private void sendMessageNotificationsAboutEndedSubscription(UserFollowing notification) {
         SendMessage sendMessage = new SendMessage(
                 notification.getChatId().toString(),
                 TEXT_ABOUT_ENDED_SUBSCRIPTION);
@@ -244,6 +240,6 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         } catch (Exception e) {
             logger.error("Ошибка отправки сообщения в чат{}", notification.getChatId(), e);
         }
-    }
+    }*/
 
 }

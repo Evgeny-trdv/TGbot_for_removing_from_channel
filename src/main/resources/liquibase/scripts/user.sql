@@ -6,6 +6,8 @@ CREATE TABLE user_following (
     payment BOOLEAN,
     date_started TIMESTAMP,
     date_notification TIMESTAMP,
+    sent_notification BOOLEAN,
     date_ended TIMESTAMP,
-    sent BOOLEAN
+    sent_ended BOOLEAN
 )
+

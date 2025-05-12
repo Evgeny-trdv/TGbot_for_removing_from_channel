@@ -11,13 +11,13 @@ import java.time.LocalDateTime;
 public class CheckingService {
 
     public final UserStateRegistry userStateRegistry;
-    public final SendMessageService sendMessageService;
+    public final MessageService messageService;
     public final TelegramBot telegramBot;
     public final UserRepository userRepository;
 
-    public CheckingService(UserStateRegistry userStateRegistry, SendMessageService sendMessageService, TelegramBot telegramBot, UserRepository userRepository) {
+    public CheckingService(UserStateRegistry userStateRegistry, MessageService messageService, TelegramBot telegramBot, UserRepository userRepository) {
         this.userStateRegistry = userStateRegistry;
-        this.sendMessageService = sendMessageService;
+        this.messageService = messageService;
         this.telegramBot = telegramBot;
         this.userRepository = userRepository;
     }
@@ -25,7 +25,7 @@ public class CheckingService {
     public void handleUserInput(long chatId, String userState, long chatIdNewUser) {
         switch (userState) {
             case "AWAITING_NAME":
-                telegramBot.execute(sendMessageService.getSendTextMessageToAdminAboutSaveUserToBD(chatId));
+                telegramBot.execute(messageService.getSendTextMessageToAdminAboutSaveUserToBD(chatId));
                 saveUserInBD(chatIdNewUser);
                 userStateRegistry.clearUserState(chatId);
                 break;

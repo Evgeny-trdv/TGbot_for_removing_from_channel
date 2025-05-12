@@ -14,22 +14,21 @@ import java.util.List;
 public class NotificationService {
 
     private final UserRepository userRepository;
-    private final SendMessageService sendMessageService;
+    private final MessageService messageService;
     private final TelegramBot telegramBot;
-    private final RemoveUserFromChannelsService removeUserFromChannelsService;
+    private final RemoverUserFromChannelsService removerUserFromChannelsService;
 
-    public NotificationService(UserRepository userRepository, SendMessageService sendMessageService, TelegramBot telegramBot, RemoveUserFromChannelsService removeUserFromChannelsService) {
+    public NotificationService(UserRepository userRepository, MessageService messageService, TelegramBot telegramBot, RemoverUserFromChannelsService removerUserFromChannelsService) {
         this.userRepository = userRepository;
-        this.sendMessageService = sendMessageService;
+        this.messageService = messageService;
         this.telegramBot = telegramBot;
-        this.removeUserFromChannelsService = removeUserFromChannelsService;
+        this.removerUserFromChannelsService = removerUserFromChannelsService;
     }
 
 
     @Scheduled(cron = "0 0/1 * * * *")
     public void sendNotificationToUsersAboutApproachingEndSubscription() {
         LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
-
         /**
          * создаётся список уведомлений об окончании подписки с теми данными из БД, которые ещё актуальны
          */
@@ -40,7 +39,7 @@ public class NotificationService {
          * вызываем метод для отправки сообщения
          */
         for (UserFollowing userFollowing : listUserToSendNotification) {
-            telegramBot.execute(sendMessageService.sendMessageNotificationAboutApproachingEndSubscription(userFollowing));
+            telegramBot.execute(messageService.sendMessageNotificationAboutApproachingEndSubscription(userFollowing));
             userFollowing.setSentNotification(true);
             userRepository.save(userFollowing);
         }
@@ -49,7 +48,6 @@ public class NotificationService {
     @Scheduled(cron = "0 0/1 * * * *")
     public void sendNotificationToUsersAboutEndedSubscription() {
         LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
-
         /**
          * создаётся список уведомлений об окончании подписки с теми данными из БД, которые ещё актуальны
          */
@@ -61,18 +59,19 @@ public class NotificationService {
          */
         for (UserFollowing userFollowing : listUserToSendNotification) {
             Long chatId = userFollowing.getChatId();
-            telegramBot.execute(sendMessageService.sendMessageNotificationAboutEndedSubscription(userFollowing));
+            telegramBot.execute(messageService.sendMessageNotificationAboutEndedSubscription(userFollowing));
 
             userFollowing.setSentEnded(true);
             userRepository.save(userFollowing);
 
-            userRepository.findByChatId(chatId).setDateStarted(null);
-            userRepository.findByChatId(chatId).setDateNotification(null);
-            userRepository.findByChatId(chatId).setDateEnded(null);
-            userRepository.findByChatId(chatId).setPayment(false);
+//            userRepository.findByChatId(chatId).setDateStarted(null);
+//            userRepository.findByChatId(chatId).setDateNotification(null);
+//            userRepository.findByChatId(chatId).setDateEnded(null);
+//            userRepository.findByChatId(chatId).setPayment(false);
 
-            removeUserFromChannelsService.removeUserFromChannels(chatId);
-            userRepository.save(userFollowing);
+            removerUserFromChannelsService.removeUserFromChannels(chatId);
+            userRepository.delete(userFollowing);
+//            userRepository.save(userFollowing);
         }
     }
 }

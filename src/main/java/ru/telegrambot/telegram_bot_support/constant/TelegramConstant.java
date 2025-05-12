@@ -8,7 +8,74 @@ public class TelegramConstant {
     public static final String TEXT_NOTIFICATION = "Ваша закончится через 2 дня. Если хотите продолжить, то нажмите \"/start\" и следуете инструкции.";
     public static final String TEXT_ABOUT_ENDED_SUBSCRIPTION = "Ваша подписка закончилась";
 
-    public static final long YOUR_CHAT_ID = 1347452135L;
+    public static final String TEXT_INITIAL = """
+            ✅ Моментальное дублирование сообщений;
+            ✅Эксклюзивные сигналы (входы в сделки от лучших трейдеров);
+            ✅Анализ рынка (неочевидные инсайды);
+            ✅Обзоры новых проектов (ICO, IDO, NFT);
+            ✅Обучение (как торговать, использовать DeFi и т. д.);
+            ✅Закрытые AMA-сессии;
+            ✅Все самые главные события будут приходить ежедневно в краткой форме.
+         
+            """;
+
+    public static final String LIST_CHANNELS = """
+            Cryptology
+            КриптоСвин
+            Arbus Reborn
+            Слёзы Сатоши
+            Alliance Matt.A
+            Герман на Блокчейне
+            Traid Invest
+            Crypto Family Signals
+            Alexand Gerchik
+            Cartel TEAM
+            MMarketMaker
+            Мысли Вайкоффа
+            Binance Killers
+            Laplas alerts
+            RMNVpool
+            Cryptomannn
+            AR Premium
+            CryptoStudent
+            Мухтов Ильнур
+            Ленивый Инвестор
+            СRYPTO Сытый Хомяк
+            Crypto Angel (Maloletoff)
+            Картель
+            Pentagon
+            Booba Signals
+            Mz Mozart
+            Crypto Daniel
+            Billions Crypto
+            Vectrum Club
+            2TOP
+            Cartel Trade
+            Crypto Bullet
+            Premium 80/20 Trader
+            Волновой Анализ
+            Ковчег
+            P4M
+            """;
+
+    public static final String PAYMENT = """
+            <b>цена:</b> 30$
+            <b>срок:</b> 30 дней
+            
+            <code>TNXwDwz6ktbzSyEo6RtBeAVopckTvZucBB</code> (TRC20)
+            
+            <code>0x0fa6a59fc3eb11d82804ba5b576a5c335336138c</code> (BEP20)
+            
+            Если вам необходимо сделать перевод в другой сети, вы можете обратиться напрямую, написав сюда - @cryptokrotik.
+            
+            При нажатии на адрес кошелька он автоматически скопируется. После выполнения оплаты отправьте боту скриншот транзакции"
+            """;
+
+    public static final String SUPPORT = """
+            Cвязь: @cryptokrotik
+            """;
+
+    public static final long YOUR_CHAT_ID = 847030320L;
 
     public static final List<String> TARGET_CHANNELS = Arrays.asList(
             "-1002609655325",

@@ -8,11 +8,11 @@ import org.springframework.stereotype.Service;
 import static ru.telegrambot.telegram_bot_support.constant.TelegramConstant.TARGET_CHANNELS;
 
 @Service
-public class RemoveUserFromChannelsService {
+public class RemoverUserFromChannelsService {
 
     private final TelegramBot telegramBot;
 
-    public RemoveUserFromChannelsService(TelegramBot telegramBot) {
+    public RemoverUserFromChannelsService(TelegramBot telegramBot) {
         this.telegramBot = telegramBot;
     }
 

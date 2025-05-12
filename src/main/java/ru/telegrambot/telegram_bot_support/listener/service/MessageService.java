@@ -1,5 +1,6 @@
 package ru.telegrambot.telegram_bot_support.listener.service;
 
+import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
 import org.springframework.stereotype.Service;
@@ -8,17 +9,13 @@ import ru.telegrambot.telegram_bot_support.model.UserFollowing;
 import static ru.telegrambot.telegram_bot_support.constant.TelegramConstant.*;
 
 @Service
-public class SendMessageService {
+public class MessageService {
 
     public SendPhoto getSendStartMessage(long chatId, String firstNameUser) {
-        java.io.File file = new java.io.File("src/main/resources/static/2024-05-12_13-00-06.png");
+        java.io.File file = new java.io.File("src/main/resources/static/IMG_9145.PNG");
         SendPhoto photo = new SendPhoto(chatId, file);
-        photo.caption("Добро пожаловать, " + firstNameUser + ", для получения доступа к чатам необходимо провести оплату. \n"
-                + "\n Доступ к чатам выполняется по подписке. " +
-                "\n Срок подписки - 1 месяц." +
-                "\n Цена подписки - 50$" +
-                "\n переводите на USDT:номер кошелька \n" +
-                "\n После завершения оплаты отправьте боту скриншот транзакции");
+        photo.caption(TEXT_INITIAL);
+
         return photo;
     }
 

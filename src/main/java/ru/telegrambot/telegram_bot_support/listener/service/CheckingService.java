@@ -23,12 +23,10 @@ public class CheckingService {
     }
 
     public void handleUserInput(long chatId, String userState, long chatIdNewUser) {
-        switch (userState) {
-            case "AWAITING_NAME":
-                telegramBot.execute(messageService.getSendTextMessageToAdminAboutSaveUserToBD(chatId));
-                saveUserInBD(chatIdNewUser);
-                userStateRegistry.clearUserState(chatId);
-                break;
+        if (userState.equals("AWAITING_NAME")) {
+            telegramBot.execute(messageService.getSendTextMessageToAdminAboutSaveUserToBD(chatId));
+            saveUserInBD(chatIdNewUser);
+            //userStateRegistry.clearUserState(chatId);
             // Можно добавить другие состояния
         }
     }

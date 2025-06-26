@@ -68,14 +68,16 @@ public class TelegramConstant {
             
             Если вам необходимо сделать перевод в другой сети, вы можете обратиться напрямую, написав сюда - @cryptokrotik.
             
-            При нажатии на адрес кошелька он автоматически скопируется. После выполнения оплаты отправьте боту скриншот транзакции"
+            <b>При нажатии на адрес кошелька он автоматически скопируется.</b>
+            
+            После выполнения оплаты отправьте боту скриншот транзакции"
             """;
 
     public static final String SUPPORT = """
             Cвязь: @cryptokrotik
             """;
 
-    public static final long YOUR_CHAT_ID = 847030320L;
+    public static final long ADMIN_CHAT_ID = 1347452135L;
 
     public static final List<String> TARGET_CHANNELS = Arrays.asList(
             "-1002609655325",

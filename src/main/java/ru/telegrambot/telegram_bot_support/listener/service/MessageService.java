@@ -1,6 +1,5 @@
 package ru.telegrambot.telegram_bot_support.listener.service;
 
-import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
 import org.springframework.stereotype.Service;
@@ -21,7 +20,7 @@ public class MessageService {
 
     public SendMessage getSendTextMessageToAdminForCheckingPayment(long chatId, String firstNameUser, String username) {
         return new SendMessage(
-                YOUR_CHAT_ID,
+                ADMIN_CHAT_ID,
                 "Имя клиента: "
                         + firstNameUser
                         + "\nUsername: "

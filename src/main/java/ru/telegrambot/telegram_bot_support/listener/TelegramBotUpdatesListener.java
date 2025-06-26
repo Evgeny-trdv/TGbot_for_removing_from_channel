@@ -29,18 +29,16 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private final Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
 
     private final TelegramBot telegramBot;
-    private final UserRepository userRepository;
     private final MessageService messageService;
-    private final ForwardPhotoToCheck forwardPhotoToCheck;
+    private final ForwarderPhotoToVerifyService forwarderPhotoToVerifyService;
     private final UserStateRegistry userStateRegistry;
     private final CheckingService checkingService;
     private final InlineButtonService inlineButtonService;
 
-    public TelegramBotUpdatesListener(TelegramBot telegramBot, UserRepository userRepository, MessageService messageService, ForwardPhotoToCheck forwardPhotoToCheck, UserStateRegistry userStateRegistry, CheckingService checkingService, InlineButtonService inlineButtonService) {
+    public TelegramBotUpdatesListener(TelegramBot telegramBot, MessageService messageService, ForwarderPhotoToVerifyService forwarderPhotoToVerifyService, UserStateRegistry userStateRegistry, CheckingService checkingService, InlineButtonService inlineButtonService) {
         this.telegramBot = telegramBot;
-        this.userRepository = userRepository;
         this.messageService = messageService;
-        this.forwardPhotoToCheck = forwardPhotoToCheck;
+        this.forwarderPhotoToVerifyService = forwarderPhotoToVerifyService;
         this.userStateRegistry = userStateRegistry;
         this.checkingService = checkingService;
         this.inlineButtonService = inlineButtonService;
@@ -66,13 +64,6 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 return; // Выходим, так как это отдельный тип обновления
             }
 
-//            if (update.message() == null) {
-//                /**
-//                 * игнорирование ошибки пустой строчки
-//                 */
-//                return;
-//            }
-
             if (update.message() != null) {
                 handleMessage(update);
             }
@@ -87,17 +78,11 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
         // Обработка фото
         if (messageChat.photo() != null && userStateRegistry.getUserState(update.message().chat().id()) != null) {
-            ForwardMessage forwardMessage = forwardPhotoToCheck.forwardMessageToDaniel(
+            ForwardMessage forwardMessage = forwarderPhotoToVerifyService.forwardMessageToAdmin(
                     update.message().chat().id(),
                     update.message().messageId());
 
             telegramBot.execute(forwardMessage);
-
-            telegramBot.execute(
-                    messageService.
-                            getSendTextMessageToUserAboutGettingPhoto(
-                                    update.message().chat().id()));
-
             telegramBot.execute(
                     messageService
                             .getSendTextMessageToAdminForCheckingPayment(
@@ -106,22 +91,43 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                     update.message().from().username()
                             ));
 
-            userStateRegistry.setUserState(YOUR_CHAT_ID, "AWAITING_NAME");
+            telegramBot.execute(
+                    messageService.
+                            getSendTextMessageToUserAboutGettingPhoto(
+                                    update.message().chat().id()));
+
+            userStateRegistry.setUserState(ADMIN_CHAT_ID, "AWAITING_NAME");
+
             chatIdNewUser = update.message().chat().id();
             return;
         }
 
         if (messageChat.text() != null) {
-            String adminState = userStateRegistry.getUserState(YOUR_CHAT_ID);
+            String adminState = userStateRegistry.getUserState(ADMIN_CHAT_ID);
 
-            if (adminState != null && messageChat.text().equalsIgnoreCase("да")) {
+            if (adminState != null
+                    && messageChat.text().equalsIgnoreCase("да")
+                    && messageChat.replyToMessage() != null
+                    /*&& !(forwardPhotoToCheck.listWaiting.isEmpty())*/
+                    && !(forwarderPhotoToVerifyService.forwardMap.isEmpty())) {
                 // Если бот ожидает ввод от пользователя
                     /**
                      * метод для работы логики Данила в момент получения фотографии
                      * необходим ответ от Данила для дальнейшей записи в БД юзера
                      */
-                    checkingService.handleUserInput(YOUR_CHAT_ID, adminState, chatIdNewUser);
-                    telegramBot.execute(messageService.getSendTextMessageToUserAboutSuccessfulChecking(chatIdNewUser));
+                for (Long l : forwarderPhotoToVerifyService.listWaiting) {
+
+                    checkingService.handleUserInput(ADMIN_CHAT_ID, adminState, l); //добавление пользователя в БД после подтверждения оплаты + сообщение об этом
+                    telegramBot.execute(messageService.getSendTextMessageToUserAboutSuccessfulChecking(l)); //сообщение пользователю о успешной проверки скриншота об оплате
+                    //forwardPhotoToCheck.listWaiting.remove(forwardPhotoToCheck.listWaiting.size() - 1);
+                    forwarderPhotoToVerifyService.forwardMap.remove(l);
+                    forwarderPhotoToVerifyService.listWaiting.remove(l);
+                }
+
+                if (/*forwardPhotoToCheck.listWaiting.isEmpty()
+                        && */forwarderPhotoToVerifyService.forwardMap.isEmpty()) {
+                    userStateRegistry.clearUserState(ADMIN_CHAT_ID);
+                }
                     return;
             }
 

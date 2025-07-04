@@ -4,9 +4,17 @@ import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import org.springframework.stereotype.Service;
 
+/**
+ * сервис, отвечающий за активацию кнопок
+ * и переход между ними
+ */
 @Service
 public class InlineButtonService {
 
+    /**
+     * метод для активации стартовых кнопок
+     * @return кнопки под сообщением
+     */
     public InlineKeyboardMarkup getButtonsForStart() {
         InlineKeyboardButton BigButton = new InlineKeyboardButton(
                 "Список приваток").callbackData("list");
@@ -21,6 +29,10 @@ public class InlineButtonService {
         );
     }
 
+    /**
+     * метод для предоставления кнопок после нажатия "Список приваток"
+     * @return кнопки под сообщением
+     */
     public InlineKeyboardMarkup getButtonsForList() {
         InlineKeyboardButton BigButton = new InlineKeyboardButton(
                 "← Вернуться назад").callbackData("back");
@@ -35,6 +47,10 @@ public class InlineButtonService {
         );
     }
 
+    /**
+     * метод для предоставления кнопок после нажатия "Подписка"
+     * @return кнопки под сообщением
+     */
     public InlineKeyboardMarkup getButtonsForPayment() {
         InlineKeyboardButton button1 = new InlineKeyboardButton(
                 "← Вернуться назад").callbackData("back");
@@ -50,6 +66,10 @@ public class InlineButtonService {
         );
     }
 
+    /**
+     * метод для предоставления кнопок после нажатия "Поддержка"
+     * @return кнопки под сообщением
+     */
     public InlineKeyboardMarkup getButtonsForSupport() {
         InlineKeyboardButton button1 = new InlineKeyboardButton(
                 "← Вернуться назад").callbackData("back");

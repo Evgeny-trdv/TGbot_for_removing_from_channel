@@ -13,7 +13,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ru.telegrambot.telegram_bot_support.listener.service.*;
-import ru.telegrambot.telegram_bot_support.repository.UserRepository;
+import ru.telegrambot.telegram_bot_support.listener.service.message.PreparerMessageService;
+import ru.telegrambot.telegram_bot_support.listener.service.message.SenderMessageService;
+import ru.telegrambot.telegram_bot_support.listener.state.impl.AdminActiveState;
+import ru.telegrambot.telegram_bot_support.listener.state.impl.UserActiveState;
 
 import java.util.List;
 
@@ -29,18 +32,22 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private final Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
 
     private final TelegramBot telegramBot;
-    private final MessageService messageService;
+    private final PreparerMessageService preparerMessageService;
+    private final SenderMessageService senderMessageService;
     private final ForwarderPhotoToVerifyService forwarderPhotoToVerifyService;
-    private final UserStateRegistry userStateRegistry;
-    private final CheckingService checkingService;
+    private final UserActiveState userActiveState;
+    private final AdminActiveState adminActiveState;
+    private final AddingUserToDataBaseService addingUserToDataBaseService;
     private final InlineButtonService inlineButtonService;
 
-    public TelegramBotUpdatesListener(TelegramBot telegramBot, MessageService messageService, ForwarderPhotoToVerifyService forwarderPhotoToVerifyService, UserStateRegistry userStateRegistry, CheckingService checkingService, InlineButtonService inlineButtonService) {
+    public TelegramBotUpdatesListener(TelegramBot telegramBot, PreparerMessageService preparerMessageService, SenderMessageService senderMessageService, ForwarderPhotoToVerifyService forwarderPhotoToVerifyService, UserActiveState userActiveState, AdminActiveState adminActiveState, AddingUserToDataBaseService addingUserToDataBaseService, InlineButtonService inlineButtonService) {
         this.telegramBot = telegramBot;
-        this.messageService = messageService;
+        this.preparerMessageService = preparerMessageService;
+        this.senderMessageService = senderMessageService;
         this.forwarderPhotoToVerifyService = forwarderPhotoToVerifyService;
-        this.userStateRegistry = userStateRegistry;
-        this.checkingService = checkingService;
+        this.userActiveState = userActiveState;
+        this.adminActiveState = adminActiveState;
+        this.addingUserToDataBaseService = addingUserToDataBaseService;
         this.inlineButtonService = inlineButtonService;
     }
 
@@ -76,39 +83,40 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private void handleMessage(Update update) {
         Message messageChat = update.message();
 
-        // Обработка фото
-        if (messageChat.photo() != null && userStateRegistry.getUserState(update.message().chat().id()) != null) {
+        /**
+         * часть кода, отвечающего за пересылку сообщения с фотографией(чек оплаты)
+         * от пользователя к администратору для дальнейшей проверки оригинальности фотографии
+         */
+        if (messageChat.photo() != null && userActiveState.getUserState(update.message().chat().id()) != null) {
             ForwardMessage forwardMessage = forwarderPhotoToVerifyService.forwardMessageToAdmin(
                     update.message().chat().id(),
                     update.message().messageId());
+            senderMessageService.sendForwardMessage(forwardMessage);
 
-            telegramBot.execute(forwardMessage);
-            telegramBot.execute(
-                    messageService
-                            .getSendTextMessageToAdminForCheckingPayment(
-                                    update.message().chat().id(),
-                                    update.message().chat().firstName(),
-                                    update.message().from().username()
-                            ));
+            SendMessage textMessageToAdminForCheckingPayment = preparerMessageService
+                    .getTextMessageToAdminForCheckingPayment(
+                            update.message().chat().id(),
+                            update.message().chat().firstName(),
+                            update.message().from().username());
+            senderMessageService.sendMessage(textMessageToAdminForCheckingPayment);
 
-            telegramBot.execute(
-                    messageService.
-                            getSendTextMessageToUserAboutGettingPhoto(
-                                    update.message().chat().id()));
+            SendMessage sendTextMessageToUserAboutGettingPhoto = preparerMessageService.
+                    getSendTextMessageToUserAboutGettingPhoto(
+                            update.message().chat().id());
+            senderMessageService.sendMessage(sendTextMessageToUserAboutGettingPhoto);
 
-            userStateRegistry.setUserState(ADMIN_CHAT_ID, "AWAITING_NAME");
+            adminActiveState.setUserState(ADMIN_CHAT_ID, "AWAITING_NAME");
 
             chatIdNewUser = update.message().chat().id();
             return;
         }
 
         if (messageChat.text() != null) {
-            String adminState = userStateRegistry.getUserState(ADMIN_CHAT_ID);
+            String adminState = adminActiveState.getUserState(ADMIN_CHAT_ID);
 
             if (adminState != null
                     && messageChat.text().equalsIgnoreCase("да")
                     && messageChat.replyToMessage() != null
-                    /*&& !(forwardPhotoToCheck.listWaiting.isEmpty())*/
                     && !(forwarderPhotoToVerifyService.forwardMap.isEmpty())) {
                 // Если бот ожидает ввод от пользователя
                     /**
@@ -117,28 +125,36 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                      */
                 for (Long l : forwarderPhotoToVerifyService.listWaiting) {
 
-                    checkingService.handleUserInput(ADMIN_CHAT_ID, adminState, l); //добавление пользователя в БД после подтверждения оплаты + сообщение об этом
-                    telegramBot.execute(messageService.getSendTextMessageToUserAboutSuccessfulChecking(l)); //сообщение пользователю о успешной проверки скриншота об оплате
-                    //forwardPhotoToCheck.listWaiting.remove(forwardPhotoToCheck.listWaiting.size() - 1);
+                    addingUserToDataBaseService.handleUserInput(adminState, l); //добавление пользователя в БД после подтверждения оплаты + сообщение об этом
+                    telegramBot.execute(preparerMessageService.getSendTextMessageToUserAboutSuccessfulChecking(l)); //сообщение пользователю о успешной проверки скриншота об оплате
                     forwarderPhotoToVerifyService.forwardMap.remove(l);
                     forwarderPhotoToVerifyService.listWaiting.remove(l);
                 }
 
-                if (/*forwardPhotoToCheck.listWaiting.isEmpty()
-                        && */forwarderPhotoToVerifyService.forwardMap.isEmpty()) {
-                    userStateRegistry.clearUserState(ADMIN_CHAT_ID);
+                if (forwarderPhotoToVerifyService.forwardMap.isEmpty()) {
+                    adminActiveState.clearUserState(ADMIN_CHAT_ID);
                 }
                     return;
             }
 
+            /**
+             * часть кода, отвечющее за активацию бота
+             * по команде /start с текстом, кнопками и фотографией
+             */
             if (update.message().text().equals("/start")) {
 
                 InlineKeyboardMarkup keyboardMarkup = inlineButtonService.getButtonsForStart();
 
-                telegramBot.execute(messageService.getSendStartMessage(
+                SendPhoto startPhotoMessage = preparerMessageService.getStartPhotoMessage(
                         update.message().chat().id(),
                         update.message().from().firstName()
-                ).replyMarkup(keyboardMarkup));
+                ).replyMarkup(keyboardMarkup);
+                senderMessageService.sendPhoto(startPhotoMessage);
+
+                /*telegramBot.execute(preparerMessageService.getStartPhotoMessage(
+                        update.message().chat().id(),
+                        update.message().from().firstName()
+                ).replyMarkup(keyboardMarkup));*/
             }
 
         }
@@ -180,8 +196,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 case "pay":
                     responseText = PAYMENT;
                     keyboardMarkup = inlineButtonService.getButtonsForPayment();
-                    userStateRegistry.setUserState(chatId
-                             , "photo");
+                    userActiveState.setUserState(chatId
+                             , "waiting_photo");
                     break;
 
                 case "support":

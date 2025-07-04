@@ -1,4 +1,4 @@
-package ru.telegrambot.telegram_bot_support.listener.service;
+package ru.telegrambot.telegram_bot_support.listener.service.message;
 
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
@@ -7,10 +7,14 @@ import ru.telegrambot.telegram_bot_support.model.UserFollowing;
 
 import static ru.telegrambot.telegram_bot_support.constant.TelegramConstant.*;
 
+/**
+ * сервис для подготовки фотографий и сообщений
+ * для отправления пользователям или администратору
+ */
 @Service
-public class MessageService {
+public class PreparerMessageService {
 
-    public SendPhoto getSendStartMessage(long chatId, String firstNameUser) {
+    public SendPhoto getStartPhotoMessage(long chatId, String firstNameUser) {
         java.io.File file = new java.io.File("src/main/resources/static/IMG_9145.PNG");
         SendPhoto photo = new SendPhoto(chatId, file);
         photo.caption(TEXT_INITIAL);
@@ -18,7 +22,7 @@ public class MessageService {
         return photo;
     }
 
-    public SendMessage getSendTextMessageToAdminForCheckingPayment(long chatId, String firstNameUser, String username) {
+    public SendMessage getTextMessageToAdminForCheckingPayment(long chatId, String firstNameUser, String username) {
         return new SendMessage(
                 ADMIN_CHAT_ID,
                 "Имя клиента: "
@@ -36,7 +40,7 @@ public class MessageService {
                 "Фото получено на проверку! Пожалуйста, ожидайте");
     }
 
-    public SendMessage getSendTextMessageToAdminAboutSaveUserToBD(long chatId) {
+    public SendMessage getSendTextMessageToAdminAboutSaveUserToDB(long chatId) {
         return new SendMessage(chatId, "Пользователь был успешно внесен в БД!");
     }
 

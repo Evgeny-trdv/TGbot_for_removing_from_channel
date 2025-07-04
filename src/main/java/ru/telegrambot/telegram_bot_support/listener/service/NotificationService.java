@@ -3,6 +3,7 @@ package ru.telegrambot.telegram_bot_support.listener.service;
 import com.pengrad.telegrambot.TelegramBot;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import ru.telegrambot.telegram_bot_support.listener.service.message.PreparerMessageService;
 import ru.telegrambot.telegram_bot_support.model.UserFollowing;
 import ru.telegrambot.telegram_bot_support.repository.UserRepository;
 
@@ -14,13 +15,13 @@ import java.util.List;
 public class NotificationService {
 
     private final UserRepository userRepository;
-    private final MessageService messageService;
+    private final PreparerMessageService preparerMessageService;
     private final TelegramBot telegramBot;
     private final RemoverUserFromChannelsService removerUserFromChannelsService;
 
-    public NotificationService(UserRepository userRepository, MessageService messageService, TelegramBot telegramBot, RemoverUserFromChannelsService removerUserFromChannelsService) {
+    public NotificationService(UserRepository userRepository, PreparerMessageService preparerMessageService, TelegramBot telegramBot, RemoverUserFromChannelsService removerUserFromChannelsService) {
         this.userRepository = userRepository;
-        this.messageService = messageService;
+        this.preparerMessageService = preparerMessageService;
         this.telegramBot = telegramBot;
         this.removerUserFromChannelsService = removerUserFromChannelsService;
     }
@@ -39,7 +40,7 @@ public class NotificationService {
          * вызываем метод для отправки сообщения
          */
         for (UserFollowing userFollowing : listUserToSendNotification) {
-            telegramBot.execute(messageService.sendMessageNotificationAboutApproachingEndSubscription(userFollowing));
+            telegramBot.execute(preparerMessageService.sendMessageNotificationAboutApproachingEndSubscription(userFollowing));
             userFollowing.setSentNotification(true);
             userRepository.save(userFollowing);
         }
@@ -59,7 +60,7 @@ public class NotificationService {
          */
         for (UserFollowing userFollowing : listUserToSendNotification) {
             Long chatId = userFollowing.getChatId();
-            telegramBot.execute(messageService.sendMessageNotificationAboutEndedSubscription(userFollowing));
+            telegramBot.execute(preparerMessageService.sendMessageNotificationAboutEndedSubscription(userFollowing));
 
             userFollowing.setSentEnded(true);
             userRepository.save(userFollowing);

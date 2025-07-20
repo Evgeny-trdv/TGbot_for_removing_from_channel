@@ -67,7 +67,7 @@ public class PreparerMessageService {
     public SendMessage getSendTextMessageToAdminAboutSaveUserToDB(long chatId) {
         return new SendMessage(
                 chatId,
-                "Пользователь был успешно внесен в БД!");
+                TEXT_ABOUT_SAVE_USER_TO_DATABASE);
     }
 
     /**
@@ -75,11 +75,10 @@ public class PreparerMessageService {
      * @param chatId id чата пользователя
      * @return SendMessage текстовое сообщение
      */
-    public SendMessage getSendTextMessageToUserAboutSuccessfulChecking(long chatId) {
+    public SendMessage getSendTextMessageToUserAboutSuccessfulVerifying(long chatId) {
         return new SendMessage(
                 chatId,
-                "Фото прошло проверку! В ближайшее время вам придёт папка с чатами"
-                + "\nCрок подписки - 30 дней не зависимо от месяца");
+                TEXT_ABOUT_SUCCESSFUL_VERIFYING);
     }
 
     /**

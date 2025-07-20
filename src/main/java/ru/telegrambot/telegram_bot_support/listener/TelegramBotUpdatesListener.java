@@ -126,7 +126,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 for (Long l : forwarderPhotoToVerifyService.listWaiting) {
 
                     addingUserToDataBaseService.handleUserInput(adminState, l); //добавление пользователя в БД после подтверждения оплаты + сообщение об этом
-                    telegramBot.execute(preparerMessageService.getSendTextMessageToUserAboutSuccessfulChecking(l)); //сообщение пользователю о успешной проверки скриншота об оплате
+                    telegramBot.execute(preparerMessageService.getSendTextMessageToUserAboutSuccessfulVerifying(l)); //сообщение пользователю о успешной проверки скриншота об оплате
                     forwarderPhotoToVerifyService.forwardMap.remove(l);
                     forwarderPhotoToVerifyService.listWaiting.remove(l);
                 }

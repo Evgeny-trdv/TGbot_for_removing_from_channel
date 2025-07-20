@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static ru.telegrambot.telegram_bot_support.constant.TelegramConstant.ADMIN_CHAT_ID;
+import static ru.telegrambot.telegram_bot_support.constant.InformationConstant.ADMIN_CHAT_ID;
 
 /**
  * сервис для переотправления сообщения-фотографии

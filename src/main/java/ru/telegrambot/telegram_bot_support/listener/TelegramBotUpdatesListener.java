@@ -21,7 +21,7 @@ import ru.telegrambot.telegram_bot_support.listener.state.impl.UserActiveState;
 import java.util.List;
 
 
-import static ru.telegrambot.telegram_bot_support.constant.TelegramConstant.*;
+import static ru.telegrambot.telegram_bot_support.constant.InformationConstant.*;
 
 
 @Service
@@ -146,8 +146,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 InlineKeyboardMarkup keyboardMarkup = inlineButtonService.getButtonsForStart();
 
                 SendPhoto startPhotoMessage = preparerMessageService.getStartPhotoMessage(
-                        update.message().chat().id(),
-                        update.message().from().firstName()
+                        update.message().chat().id()
                 ).replyMarkup(keyboardMarkup);
                 senderMessageService.sendPhoto(startPhotoMessage);
 

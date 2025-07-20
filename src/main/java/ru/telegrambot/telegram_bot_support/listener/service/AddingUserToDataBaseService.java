@@ -8,7 +8,7 @@ import ru.telegrambot.telegram_bot_support.repository.UserRepository;
 
 import java.time.LocalDateTime;
 
-import static ru.telegrambot.telegram_bot_support.constant.TelegramConstant.ADMIN_CHAT_ID;
+import static ru.telegrambot.telegram_bot_support.constant.InformationConstant.ADMIN_CHAT_ID;
 
 /**
  * Сервис для добавления пользователя в базу данных

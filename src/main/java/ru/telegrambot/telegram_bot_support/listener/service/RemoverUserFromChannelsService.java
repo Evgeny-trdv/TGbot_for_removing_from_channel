@@ -5,7 +5,7 @@ import com.pengrad.telegrambot.request.BanChatMember;
 import com.pengrad.telegrambot.request.UnbanChatMember;
 import org.springframework.stereotype.Service;
 
-import static ru.telegrambot.telegram_bot_support.constant.TelegramConstant.TARGET_CHANNELS;
+import static ru.telegrambot.telegram_bot_support.constant.InformationConstant.TARGET_CHANNELS;
 
 @Service
 public class RemoverUserFromChannelsService {

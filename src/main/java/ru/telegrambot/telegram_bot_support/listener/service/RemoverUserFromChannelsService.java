@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 
 import static ru.telegrambot.telegram_bot_support.constant.InformationConstant.TARGET_CHANNELS;
 
+/**
+ * Сервис для удаления и разбанивания пользователя из всех групп/каналов в списке
+ */
 @Service
 public class RemoverUserFromChannelsService {
 
@@ -16,20 +19,23 @@ public class RemoverUserFromChannelsService {
         this.telegramBot = telegramBot;
     }
 
+    /**
+     * метод удаляющий и разбанивающий пользователя из всех групп/каналов в списке через цикл
+     * @param chatId id чата последователя
+     */
     public void removeUserFromChannels(Long chatId) {
         for (String channelId : TARGET_CHANNELS) {
             try {
-                // Сначала баним (это удалит из канала)
+                // Баним пользователя для удаления из группы/канала
                 BanChatMember ban = new BanChatMember(channelId, chatId);
                 telegramBot.execute(ban);
 
-                // Затем разбаниваем (если нужно, чтобы мог присоединиться снова)
+                // Разбаниваем пользователя для возможности вернуться в группу/канал
                 UnbanChatMember unban = new UnbanChatMember(channelId, chatId);
                 telegramBot.execute(unban);
 
             } catch (IllegalAccessError e) {
-                //allSuccess = false;
-                // Логируем ошибку для конкретного канала
+                // Логируем ошибку для конкретной группы/канала
                 System.err.println("Error removing user from channel " + chatId + ": " + e.getMessage());
             }
         }

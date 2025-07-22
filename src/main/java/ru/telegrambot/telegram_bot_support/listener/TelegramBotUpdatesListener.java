@@ -23,7 +23,10 @@ import java.util.List;
 
 import static ru.telegrambot.telegram_bot_support.constant.InformationConstant.*;
 
-
+/**
+ * Главный сервис -
+ * - отвечает за логику взаимодействия пользователя/админисратора с телеграм ботом
+ */
 @Service
 public class TelegramBotUpdatesListener implements UpdatesListener {
 
@@ -51,6 +54,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         this.inlineButtonService = inlineButtonService;
     }
 
+    // сетап бота и кнопок
     @PostConstruct
     public void init() {
         telegramBot.setUpdatesListener(this);
@@ -61,6 +65,11 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         }
     }
 
+    /**
+     * метод обработки запросов (updates)
+     * @param updates available updates
+     * @return int UpdatesListener.CONFIRMED_UPDATES_ALL
+     */
     @Override
     public int process(List<Update> updates) {
         updates.forEach(update -> {
@@ -68,7 +77,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
             if (update.callbackQuery() != null) {
                 handleCallbackQuery(update);
-                return; // Выходим, так как это отдельный тип обновления
+                return;
             }
 
             if (update.message() != null) {
@@ -83,25 +92,23 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private void handleMessage(Update update) {
         Message messageChat = update.message();
 
-        /**
-         * часть кода, отвечающего за пересылку сообщения с фотографией(чек оплаты)
-         * от пользователя к администратору для дальнейшей проверки оригинальности фотографии
-         */
+        // часть кода, отвечающая за пересылку сообщения с фотографией(чек оплаты)
+        // от пользователя к администратору для дальнейшей проверки оригинальности фотографии
         if (messageChat.photo() != null && userActiveState.getUserState(update.message().chat().id()) != null) {
             ForwardMessage forwardMessage = forwarderPhotoToVerifyService.forwardMessageToAdmin(
                     update.message().chat().id(),
                     update.message().messageId());
             senderMessageService.sendForwardMessage(forwardMessage);
 
-            SendMessage textMessageToAdminForCheckingPayment = preparerMessageService
-                    .getTextMessageToAdminForCheckingPayment(
+            SendMessage textMessageToAdminForCheckingPayment =
+                    preparerMessageService.getTextMessageToAdminForCheckingPayment(
                             update.message().chat().id(),
                             update.message().chat().firstName(),
                             update.message().from().username());
             senderMessageService.sendMessage(textMessageToAdminForCheckingPayment);
 
-            SendMessage sendTextMessageToUserAboutGettingPhoto = preparerMessageService.
-                    getSendTextMessageToUserAboutGettingPhoto(
+            SendMessage sendTextMessageToUserAboutGettingPhoto =
+                    preparerMessageService.getSendTextMessageToUserAboutGettingPhoto(
                             update.message().chat().id());
             senderMessageService.sendMessage(sendTextMessageToUserAboutGettingPhoto);
 
@@ -111,6 +118,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             return;
         }
 
+        // часть кода, отвечающая за обработку текста
         if (messageChat.text() != null) {
             String adminState = adminActiveState.getUserState(ADMIN_CHAT_ID);
 

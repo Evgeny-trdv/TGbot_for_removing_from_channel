@@ -15,8 +15,9 @@ public class UserFollowing {
     private boolean payment;
     private LocalDateTime dateStarted;
     private LocalDateTime dateNotification;
+    private boolean sentNotification;
     private LocalDateTime dateEnded;
-    private boolean sent;
+    private boolean sentEnded;
 
     public UserFollowing() {
     }
@@ -26,8 +27,17 @@ public class UserFollowing {
         this.payment = false;
         this.dateStarted = dateStarted;
         this.dateNotification = dateNotification;
+        this.sentNotification = false;
         this.dateEnded = dateEnded;
-        this.sent = false;
+        this.sentEnded = false;
+    }
+
+    public boolean isSentNotification() {
+        return sentNotification;
+    }
+
+    public void setSentNotification(boolean sent_notification) {
+        this.sentNotification = sent_notification;
     }
 
     public LocalDateTime getDateNotification() {
@@ -38,12 +48,12 @@ public class UserFollowing {
         this.dateNotification = dateNotification;
     }
 
-    public boolean isSent() {
-        return sent;
+    public boolean isSentEnded() {
+        return sentEnded;
     }
 
-    public void setSent(boolean sent) {
-        this.sent = sent;
+    public void setSentEnded(boolean sent_ended) {
+        this.sentEnded = sent_ended;
     }
 
     public Long getChatId() {

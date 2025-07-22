@@ -2,10 +2,12 @@
 
 --changeset etaradaev:1
 CREATE TABLE user_following (
-    chat_id SERIAL,
+    chat_id BIGSERIAL,
     payment BOOLEAN,
     date_started TIMESTAMP,
     date_notification TIMESTAMP,
+    sent_notification BOOLEAN,
     date_ended TIMESTAMP,
-    sent BOOLEAN
+    sent_ended BOOLEAN
 )
+

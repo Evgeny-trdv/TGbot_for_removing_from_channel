@@ -2,6 +2,7 @@
 
 **Project:** telegram bot for providing information about a subscription to private channels and with functions for managing users who have purchased a subscription.
 
+
 **Admin** - the role of managing and verifying subscription payments
 
 **Users** - the role of getting information about private channels and the ability to purchase subscriptions

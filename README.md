@@ -6,11 +6,11 @@
 **Users** - the role of getting information about private channels and the ability to purchase subscriptions
 
 ## **Requirements**
-Java 17
-Telegram
-Maven
-PostrgeSQL
-Liquibase
+Java 17\
+Telegram\
+Maven\
+PostrgeSQL\
+Liquibase\
 
 ## **Main features** 
 1. Information about access to private telegram channels

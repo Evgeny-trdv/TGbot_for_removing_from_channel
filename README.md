@@ -31,3 +31,7 @@ or Download this repository as zip and unzip\
 `mvn clean package`\
 After compiled successfully, you will get the fat jar with name\
 `java -jar target/TelegramBotSupportApplication.jar`
+
+### **Main commands**
+* /start - Starting massage
+* /help - Help for commands

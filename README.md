@@ -6,11 +6,13 @@
 **Users** - the role of getting information about private channels and the ability to purchase subscriptions
 
 ## **Requirements**
-Java 17\
+Java 11+\
 Telegram\
 Maven\
 PostrgeSQL\
-Liquibase
+Liquibase\
+SLF4J + Logback\
+Token bot (@BotFather) (https://t.me/BotFather)
 
 ## **Main features** 
 1. Information about access to private telegram channels
@@ -18,7 +20,8 @@ Liquibase
 3. Subscription information and payment method
 4. Support and communication with the admin
 5. Sending subscription termination notifications
-6. Automatic and manual (as an admin) closure of access to private channels 
+6. Automatic and manual (as an admin) closure of access to private channels
+7. processing commands /start, /help
 
 ### **Install**
 - Clone this repository to your local PC\
